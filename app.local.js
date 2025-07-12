@@ -776,6 +776,7 @@ function renderHistoria() {
             </span>`;
         });
         html += `<button onclick="showFullHistory()" style="margin-left:0.7em;font-size:0.95em;background:#222;color:#aaf;border-radius:6px;">HISTORIA</button>`;
+        html += `<button onclick="showStatusDebug()" style="margin-left:0.5em;font-size:0.95em;background:#222;color:#8f8;border-radius:6px;">STATUS</button>`;
     }
     document.getElementById("history-row").innerHTML = html;
 }
@@ -1135,6 +1136,49 @@ function showDebug(msg, type="ok") {
     } else {
         dbg.style.cursor = 'default';
     }
+}
+
+
+// ⭐ status klikalny
+function showStatusDebug() {
+    // Test API
+    let apiOk = checkAPIKeyValid();
+    let filesOk = true;
+    let testKeys = ["ytQueue", "ytHistoria", "ytChannels"];
+    try {
+        testKeys.forEach(k => {
+            let v = localStorage.getItem(k);
+            if (k !== "ytQueuePlaying" && v && v !== "null") {
+                JSON.parse(v);
+            }
+        });
+    } catch(e) {
+        filesOk = false;
+    }
+
+    // localStorage usage
+    const maxLS = 5 * 1024 * 1024;
+    const lsSize = JSON.stringify(localStorage).length;
+    let lsState = "OK";
+    let lsColor = "#00ee44";
+    if (lsSize > maxLS * 0.9) {
+        lsState = "CRITICAL";
+        lsColor = "#ff4444";
+    } else if (lsSize > maxLS * 0.7) {
+        lsState = "WARN";
+        lsColor = "#ffd700";
+    }
+
+    let browser = getShortBrowserInfo ? getShortBrowserInfo() : (navigator.userAgent || "browser");
+	
+	const version = "v.89";
+    let msg = `
+        <span style="color:#fff;font-weight:600;">API:<span style="color:#1cff6a;">OK</span></span>
+        <span style="color:#fff;font-weight:600;">&nbsp;| PLIKI:<span style="color:#1cff6a;">OK</span></span>
+        <span style="color:#fff;font-weight:600;">&nbsp;| ${version} | local storage:<span style="color:#1cff6a;">${lsSize}B/</span>=<span style="color:#1cff6a;">5MB</span></span>
+        <span style="color:#fff;font-weight:600;">&nbsp;| browser:<span style="color:#1cff6a;">${browser}</span></span>
+    `;
+    showDebug(msg, (apiOk && filesOk && lsState === "OK") ? "ok" : (apiOk && filesOk ? "warn" : "error"));
 }
 
 // ⭐ AKTUALIZUJ saveManualKey żeby odświeżył wiadomość po zapisaniu
