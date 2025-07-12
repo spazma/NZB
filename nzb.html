@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <title>🦉 Moja Nocna Kolejka YouTube</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="author" content="spaZma">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="stars-bg-effect" id="stars-bg-effect"></div>
+	<div class="container main-container">
+    <button id="toggle-stars-btn" title="Włącz/wyłącz gwiazdki w tle"
+        style="position:fixed;top:54px;right:15px;z-index:1000;font-size:1.2em;padding:0.5em 1.1em;border-radius:8px;background:#262;color:#ffe;outline:none;border:none;cursor:pointer;box-shadow:0 2px 10px #0003;">
+        ✨
+    </button>
+    <button id="toggle-theme-btn" title="Przełącz tryb nocny"
+        style="position:fixed;top:9px;right:15px;z-index:1000;font-size:1.2em;padding:0.5em 1.1em;border-radius:8px;background:#262;color:#ffe;outline:none;border:none;cursor:pointer;box-shadow:0 2px 10px #0003;">
+        🌗
+    </button>
+    
+        <header style="margin-bottom:-1em;">
+            <h1 id="program-header" style="margin-bottom:1.3em;">🦉 (NZB) Nocna Zmaza Bluesa v.88</h1>
+            <form id="yt-universal-form" autocomplete="off" class="yt-form" style="margin-bottom:1.5em;">
+                <input type="text" id="yt_universal_input" placeholder="Wklej link lub ID: film, kanał, playlista..." required>
+                <button type="submit">Dodaj</button>
+            </form>
+            <div style="margin-bottom:1.4em;">
+                <button id="export-queue-btn" type="button">Eksportuj playlistę</button>
+                <input type="file" id="import-queue-input" style="display:none;" accept="application/json">
+                <button id="import-queue-btn" type="button">Importuj playlistę</button>
+            </div>
+        </header>
+        <div class="queue-modes">
+            <button id="mode-classic" class="mode-btn">Tryb klasyczny</button>
+            <button id="mode-alternate" class="mode-btn">Kolejka naprzemienna</button>
+            <button id="mode-random" class="mode-btn">Kolejka losowa</button>
+            <label id="repeat-label" style="margin-left:2em;">
+                <input type="checkbox" id="queue-repeat">
+                🔁 Pętla
+            </label>
+        </div>
+        <div id="main-content" style="display:flex; flex-direction:column; gap:2.5em;">
+            <div id="player-queue-flex" style="display:flex; flex-direction:row; gap:4vw; align-items:flex-start; justify-content:center;">
+                <div id="player-section" style="display:flex; flex-direction:column; align-items:center; gap:2em; min-width:300px; max-width:410px;">
+                    <div id="player"></div>
+                    <div id="global-audio-settings" style="margin-bottom:1.2em;">
+                        <span style="margin-right:0.5em;vertical-align:middle;">🔊</span>
+                        <label for="volume-range" style="margin-right:0.5em;">volume:</label>
+                        <input type="range" id="volume-range" min="0" max="100" value="10" style="vertical-align:middle;">
+                        <span id="volume-value" style="margin-left:0.8em;">10%</span>
+                    </div>
+                    <div id="channels"></div>
+                </div>
+                <div id="queue-section" style="min-width:340px;">
+                    <div id="queue">
+                        <h2 style="margin-bottom:1em;">Kolejka <span id="queue-count"></span></h2>
+                        <ol id="queue-list"></ol>
+                        <button id="play-next-btn" style="display:none;">▶ Następny</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <footer>
+        <div class="footer-row"><span id="stats-row"></span></div>
+        <div class="footer-row" id="debug-row"></div>
+        <div class="footer-row" id="history-row"></div>
+    </footer>
+    <script src="app.local.js"></script>
+</body>
+</html>
