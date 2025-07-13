@@ -16,16 +16,22 @@ function clearAllAppData() {
   ].forEach((k) => localStorage.removeItem(k));
 }
 
+function getShortTitle(title, maxLen = 60) {
+  if (!title) return "";
+  if (title.length > maxLen) return title.slice(0, maxLen - 1) + "…";
+  return title;
+}
+
 // wybor następnego indeksu
 function getNextQueueIndex(currentIdx) {
   const queue = getQueue();
   const mode = localStorage.getItem("ytQueueMode") || "classic";
   if (!queue.length) return null;
+  if (queue.length === 1) return null; // <--- zapobiega zapętleniu 1 filmu
 
   const watchedIds = getWatchedIds();
 
   if (mode === "random") {
-    // Wybierz tylko indeksy nieodtworzonych filmów
     const notPlayedIndexes = queue
       .map((item, idx) => (watchedIds.includes(item.id) ? null : idx))
       .filter((idx) => idx !== null && idx !== currentIdx);
@@ -34,7 +40,7 @@ function getNextQueueIndex(currentIdx) {
       ? notPlayedIndexes
       : queue.map((item, idx) => idx).filter((idx) => idx !== currentIdx);
 
-    if (candidates.length === 0) return currentIdx; // tylko jeden film w kolejce
+    if (candidates.length === 0) return null; // <--- zmiana: zwraca null, nie currentIdx
 
     const next = candidates[Math.floor(Math.random() * candidates.length)];
     return next;
@@ -205,14 +211,8 @@ function updateProgressInDebug(current, total, progress) {
   const playingIdx = Number(localStorage.getItem("ytQueuePlaying"));
 
   if (queue[playingIdx]) {
-    let currentTitle = queue[playingIdx].title;
-    // Skróć tytuł do max 30 znaków (z wielokropkiem, jeśli dłuższy)
-    if (currentTitle.length > 60) {
-      currentTitle = currentTitle.slice(0, 57) + "…";
-    }
+    let currentTitle = getShortTitle(queue[playingIdx].title, 60);
     const progressText = `${formatTime(current)}/${formatTime(total)} - ${Math.round(progress)}%`;
-
-    // Wszystko w jednej linii, brak <b>, brak nowych linii
     showDebug(`▶️ ${currentTitle} ${progressText}`, "ok");
   }
 }
@@ -1163,33 +1163,38 @@ function playFromQueue(idx = 0, tried = 0) {
       events: {
         onReady: function (event) {
           event.target.setVolume(getGlobalVolume());
-          // showDebug(`🎵 Ładowanie: <b>${queue[idx].title}</b>`, "ok");
+          // Status ładowania
+          let shortTitle = getShortTitle(queue[idx]?.title || "", 60);
+          showDebug(`🎵 ${shortTitle} ładowanie`, "ok");
           startProgressTracking();
         },
         onError: function (event) {
           stopProgressTracking();
+          let shortTitle = getShortTitle(queue[idx]?.title || "", 60);
+          showDebug(`❌ ${shortTitle} błąd odtwarzania`, "error");
           removeFromQueue(videoId);
-          showDebug(
-            "Film niedostępny, usuwam z kolejki i przeskakuję dalej...",
-            "warn",
-          );
           playFromQueue(idx, tried + 1);
         },
         onStateChange: function (event) {
+          const queue = getQueue();
+          const playingIdx = Number(localStorage.getItem("ytQueuePlaying"));
+          let shortTitle = getShortTitle(queue[playingIdx]?.title || "", 60);
           if (event.data === YT.PlayerState.PLAYING) {
             event.target.setVolume(getGlobalVolume());
+            showDebug(`▶️ ${shortTitle} odtwarzanie`, "ok");
             startProgressTracking();
           }
           if (event.data === YT.PlayerState.PAUSED) {
-            const queue = getQueue();
-            const playingIdx = Number(localStorage.getItem("ytQueuePlaying"));
-            if (queue[playingIdx]) {
-              showDebug(`⏸️ Paused: <b>${queue[playingIdx].title}</b>`, "warn");
+            let progressText = "";
+            if (ytPlayer && ytPlayer.getCurrentTime && ytPlayer.getDuration) {
+              progressText = ` ${formatTime(ytPlayer.getCurrentTime())}/${formatTime(ytPlayer.getDuration())}`;
             }
+            showDebug(`⏸️ ${shortTitle}${progressText}`, "warn");
             if (progressInterval) clearInterval(progressInterval);
           }
           if (event.data === YT.PlayerState.ENDED) {
             stopProgressTracking();
+            showDebug(`🏁 ${shortTitle} zakończony`, "ok");
             const nextIdx = getNextQueueIndex(idx);
             playFromQueue(nextIdx, 0);
           }

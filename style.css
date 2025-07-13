@@ -523,6 +523,9 @@ body.soft-night .footer-row {
   color: #ffe668;
   letter-spacing: 0.08em;
   box-shadow: 0 0 5px #4117;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .footer-row.debug-ok {
   background: #263;
