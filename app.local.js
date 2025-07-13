@@ -1048,10 +1048,10 @@ function renderApiKeyFloatingBox() {
   const apiBox = document.createElement("div");
   apiBox.className = "api-key-status-floating";
   apiBox.innerHTML = `
-      <div style="font-size:1.08em;font-weight:600;margin-bottom:0.5em;">
-        <span style="color:#e2b93b;vertical-align:middle;">🔑</span> Status klucza API:
-      </div>
+    <div style="font-size:0.97em;font-weight:600;margin-bottom:0.25em;">
+      <span style="color:#e2b93b;vertical-align:middle;">🔑</span> API: 
       ${apiStatusHtml}
+    </div>
   `;
   document.body.appendChild(apiBox);
 }
