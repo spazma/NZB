@@ -8,51 +8,23 @@
     <link rel="stylesheet" href="style.css" />
   </head>
   <body>
+    <!-- Przyciski "gwiazdki" i "noc" -->
+    <button
+      id="toggle-stars-btn"
+      class="floating-top-btn"
+      title="Włącz/wyłącz gwiazdki w tle"
+    >
+      ✨
+    </button>
+    <button
+      id="toggle-theme-btn"
+      class="floating-top-btn"
+      title="Przełącz tryb nocny"
+    >
+      🌗
+    </button>
     <div class="stars-bg-effect" id="stars-bg-effect"></div>
     <div class="container main-container">
-      <button
-        id="toggle-stars-btn"
-        title="Włącz/wyłącz gwiazdki w tle"
-        style="
-          position: fixed;
-          top: 54px;
-          right: 15px;
-          z-index: 1000;
-          font-size: 1.2em;
-          padding: 0.5em 1.1em;
-          border-radius: 8px;
-          background: #262;
-          color: #ffe;
-          outline: none;
-          border: none;
-          cursor: pointer;
-          box-shadow: 0 2px 10px #0003;
-        "
-      >
-        ✨
-      </button>
-      <button
-        id="toggle-theme-btn"
-        title="Przełącz tryb nocny"
-        style="
-          position: fixed;
-          top: 9px;
-          right: 15px;
-          z-index: 1000;
-          font-size: 1.2em;
-          padding: 0.5em 1.1em;
-          border-radius: 8px;
-          background: #262;
-          color: #ffe;
-          outline: none;
-          border: none;
-          cursor: pointer;
-          box-shadow: 0 2px 10px #0003;
-        "
-      >
-        🌗
-      </button>
-
       <header style="margin-bottom: -1em">
         <h1 id="program-header" style="margin-bottom: 1.3em">
           🦉 (NZB) Nocna Zmaza Bluesa v.88
@@ -63,28 +35,25 @@
           class="yt-form"
           style="margin-bottom: 1.5em"
         >
-          <input
-            type="text"
-            id="yt_universal_input"
-            placeholder="Wklej link lub ID: film, kanał, playlista..."
-            required
-          />
-          <button type="submit">Dodaj</button>
+          <div class="input-row">
+            <input
+              type="text"
+              id="yt_universal_input"
+              placeholder="Wklej link lub ID: film, kanał, playlista..."
+              required
+            />
+            <button type="submit">Dodaj</button>
+          </div>
+          <div class="playlist-action-row">
+            <button id="export-queue-btn" type="button">
+              Eksportuj playlistę
+            </button>
+            <button id="import-queue-btn" type="button">
+              Importuj playlistę
+            </button>
+            <input type="file" id="import-queue-input" style="display: none" />
+          </div>
         </form>
-        <div style="margin-bottom: 1.4em">
-          <button id="export-queue-btn" type="button">
-            Eksportuj playlistę
-          </button>
-          <input
-            type="file"
-            id="import-queue-input"
-            style="display: none"
-            accept="application/json"
-          />
-          <button id="import-queue-btn" type="button">
-            Importuj playlistę
-          </button>
-        </div>
       </header>
       <div class="queue-modes">
         <button id="mode-classic" class="mode-btn">Tryb klasyczny</button>
