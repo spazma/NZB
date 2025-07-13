@@ -315,6 +315,44 @@ function checkAPIKeyValid() {
   return savedKey && savedKey.trim() && savedKey.length > 20;
 }
 
+function renderDebugRow() {
+  const debugRow = document.getElementById("debug-row");
+  const apiKey = localStorage.getItem("ytUserApiKey") || "";
+
+  if (!apiKey || apiKey.length < 30) {
+    debugRow.innerHTML = `
+      <span id="debug-status">🔑 Brak klucza API!</span>
+      <button id="setup-api-btn" class="pulsing-btn" style="margin-left:1em;">Ustaw klucz API</button>
+    `;
+    document.getElementById("setup-api-btn").onclick = showAPIKeySetupModal;
+  } else {
+    // Pokazuje status API, plików, storage itd.
+    checkDebugStatus(); // wywoła showDebug z odpowiednim komunikatem
+  }
+}
+
+function removeAPIKey() {
+  localStorage.removeItem("ytUserApiKey");
+  apiKey = "";
+  showDebug("🗝️ Klucz API usunięty. Wymagany ponowny klucz!", "warn");
+  updateFormState();
+  setTimeout(() => {
+    renderDebugRow?.();
+    checkDebugStatus?.();
+  }, 500);
+}
+
+// Funkcja wyświetlająca komunikaty w debug-row
+function showDebug(msg, type = "ok") {
+  const dbg = document.getElementById("debug-row");
+  if (!dbg) return;
+  dbg.innerHTML = `<span id="debug-status">${msg}</span>`;
+  dbg.className = "footer-row";
+  if (type === "ok") dbg.classList.add("debug-ok");
+  if (type === "warn") dbg.classList.add("debug-warn");
+  if (type === "error") dbg.classList.add("debug-err");
+}
+
 // ⭐ NAJPROSTSZE ROZWIĄZANIE - używaj prompt() zamiast skomplikowanego modala
 function showAPIKeySetupModal() {
   const currentKey = localStorage.getItem("ytUserApiKey") || "";
@@ -326,7 +364,7 @@ function showAPIKeySetupModal() {
       "✅ Tylko dla Ciebie - nikt nie zużywa Twojego limitu\n" +
       "✅ 5 minut konfiguracji\n\n" +
       "Kliknij OK aby otworzyć Google Console\n" +
-      "Kliknij Cancel aby wkleić istniejący klucz",
+      "Kliknij Anuluj aby wkleić istniejący klucz",
   );
 
   if (choice) {
@@ -368,30 +406,23 @@ function showAPIKeySetupModal() {
 // ⭐ FUNKCJA TESTUJĄCA I ZAPISUJĄCA KLUCZ
 function testAndSaveKey(key) {
   showDebug("🔄 Testuję klucz API...", "warn");
-
   fetch(
     `https://www.googleapis.com/youtube/v3/channels?part=id&id=UC_x5XG1OV2P6uZZ5FSM9Ttw&key=${key}`,
   )
     .then((r) => r.json())
     .then((data) => {
-      console.log("📦 API test result:", data);
-
       if (data && data.items && data.items.length > 0) {
-        // Klucz działa!
         localStorage.setItem("ytUserApiKey", key);
         apiKey = key;
-        showDebug("✅ Klucz API zapisany i przetestowany!", "ok");
-        updateFormState(); // Odblokuj formularz
-
+        showDebug("✅ Klucz API ustawiony! można wklejać linki 🎬</b>", "ok");
+        updateFormState?.();
         setTimeout(() => {
-          showDebug("Ready, Nocna Zmaza Bluesa v.89 🦉", "ok");
-        }, 2000);
+          renderDebugRow?.();
+          checkDebugStatus?.();
+        }, 500);
       } else if (data && data.error) {
-        // Błąd API
         const errorMsg = data.error.message || "Nieznany błąd API";
         showDebug(`❌ Błąd API: ${errorMsg}`, "error");
-
-        // Pokaż instrukcje
         setTimeout(() => {
           alert(
             "❌ KLUCZ NIE DZIAŁA\n\n" +
@@ -908,87 +939,119 @@ function showFullHistory() {
   let hist = getHistoria();
   const MAX_HIST = 50;
   let shown = hist.slice(-MAX_HIST).reverse();
-  let html =
-    "<h3 style='margin-bottom:1.2em;'>Pełna historia oglądania:</h3><ol style='margin-bottom:2em;'>";
-  shown.forEach((h) => {
-    html += `<li><b>${h.title}</b> (${h.channel}) <a href="https://www.youtube.com/watch?v=${h.video_id}" target="_blank" style="color:#88f">YT</a> <small>${h.date}</small></li>`;
-  });
-  html += "</ol>";
+  let html = "<h3 style='margin-bottom:1.2em;'>Pełna historia oglądania:</h3>";
+  if (!shown.length) {
+    html += "<div style='color:#aaa;font-size:1.1em;margin-bottom:2em;'>Brak historii</div>";
+  } else {
+    html += "<ol style='margin-bottom:2em;'>";
+    shown.forEach((h) => {
+      html += `<li><b>${h.title}</b> (${h.channel}) <a href="https://www.youtube.com/watch?v=${h.video_id}" target="_blank" style="color:#88f">YT</a> <small>${h.date}</small></li>`;
+    });
+    html += "</ol>";
+  }
 
-  // Przyciski
   html += `<div class="history-actions-row" style="margin-bottom:12px;display:flex;gap:0.8em;flex-wrap:wrap;justify-content:center;">
-        <button onclick='closeModal()' class='modal-btn modal-btn-default'>Zamknij</button>
-        <button onclick='clearHistory()' class='modal-btn modal-btn-danger'>Wyczyść historię</button>
-        <button id='clear-cache-btn-modal' class='modal-btn modal-btn-warn'>🧹 Wyczyść cache</button>
-        <button id='remove-api-key-btn-modal' class='modal-btn modal-btn-key'>🗝️ Usuń API key</button>
-    </div>`;
+      <button onclick='closeModal()' class='modal-btn modal-btn-default'>Zamknij</button>
+      <button onclick='clearHistory()' class='modal-btn modal-btn-danger'>Wyczyść historię</button>
+      <button id='clear-cache-btn-modal' class='modal-btn modal-btn-warn'>🧹 Wyczyść cache</button>
+      <button id='remove-api-key-btn-modal' class='modal-btn modal-btn-key'>🗝️ Usuń API key</button>
+  </div>`;
 
   modal(html);
 
-  // Dodaj box z kluczem API jako element floating
+  setTimeout(() => {
+    document.getElementById("clear-cache-btn-modal")?.addEventListener("click", () => {
+      localStorage.removeItem("ytHistoria");
+      localStorage.removeItem("ytQueue");
+      localStorage.removeItem("ytChannels");
+      localStorage.removeItem("ytLastFilmsByChannel");
+      localStorage.removeItem("ytSearchCache");
+      showDebug("🧹 Cache i historia wyczyszczone!", "ok");
+      updateFormState?.();
+      setTimeout(() => {
+        renderDebugRow?.();
+        checkDebugStatus?.();
+      }, 400);
+      window.closeModal();
+    });
+
+    document.getElementById("remove-api-key-btn-modal")?.addEventListener("click", () => {
+      localStorage.removeItem("ytUserApiKey");
+      localStorage.removeItem("ytHistoria");
+      localStorage.removeItem("ytQueue");
+      localStorage.removeItem("ytChannels");
+      localStorage.removeItem("ytLastFilmsByChannel");
+      localStorage.removeItem("ytSearchCache");
+      if (typeof apiKey !== "undefined") apiKey = "";
+      window.apiKeyStatus = "BRAK";
+      showDebug("🗝️ Klucz API i dane wyczyszczone. Podaj nowy klucz!", "warn");
+      updateFormState?.();
+      setTimeout(() => {
+        renderDebugRow?.();
+        checkDebugStatus?.();
+      }, 400);
+      window.closeModal();
+    });
+
+    document.querySelector(".modal-btn-danger")?.addEventListener("click", () => {
+      localStorage.removeItem("ytHistoria");
+      showDebug("🗑️ Historia wyczyszczona!", "ok");
+      updateFormState?.();
+      setTimeout(() => {
+        renderDebugRow?.();
+        checkDebugStatus?.();
+      }, 400);
+      window.closeModal();
+    });
+  }, 100);
+ 
+  renderApiKeyFloatingBox();
+}
+
+
+function renderApiKeyFloatingBox() {
+  // usuń poprzedni box, jeśli istnieje
+  document.querySelectorAll('.api-key-status-floating').forEach(e => e.remove());
+
   const currentApiKey = localStorage.getItem("ytUserApiKey");
   const isCustomKey = currentApiKey && currentApiKey.length > 20;
+  const apiStatus = window.apiKeyStatus || (isCustomKey ? "OK" : "BRAK");
+  let apiStatusHtml = "";
+
+  if (apiStatus === "OK") {
+    apiStatusHtml = `
+      <div style="color:#28a745;font-weight:500;margin-bottom:0.25em;">
+        <span style="font-size:1.1em;vertical-align:middle;">✅</span> używasz swojego klucza API!
+      </div>
+      <div style="font-family:monospace;font-size:0.99em;color:#bbb">
+        Klucz: ${currentApiKey.substring(0, 3)}${"*".repeat(28)}${currentApiKey.slice(-3)}
+      </div>
+    `;
+  } else if (apiStatus === "TESTING") {
+    apiStatusHtml = `<div style="color:#ffd700;"><span style="font-size:1.1em;">⏳</span> Testuję klucz API...</div>`;
+  } else if (apiStatus === "BŁĄD") {
+    apiStatusHtml = `<div style="color:#dc3545;"><span style="font-size:1.1em;">❌</span> API: BŁĄD – podaj poprawny klucz</div>`;
+  } else {
+    apiStatusHtml = `<div style="color:#ffd700;">
+        ⚠️ Brak klucza API
+      </div>
+      <div style="color:#aaa;font-family:monospace;font-size:0.95em;">
+        Aplikacja wymaga klucza do działania
+      </div>`;
+  }
+
   const apiBox = document.createElement("div");
   apiBox.className = "api-key-status-floating";
   apiBox.innerHTML = `
-        <div style="font-size:1.08em;font-weight:600;margin-bottom:0.5em;">
-            <span style="color:#e2b93b;vertical-align:middle;">🔑</span> Status klucza API:
-        </div>
-        ${
-          isCustomKey
-            ? `
-            <div style="color:#28a745;font-weight:500;margin-bottom:0.25em;">
-                <span style="font-size:1.1em;vertical-align:middle;">✅</span> Używasz własnego klucza API
-            </div>
-            <div style="font-family:monospace;font-size:0.99em;color:#bbb">
-                Klucz: ${currentApiKey.substring(0, 3)}${"*".repeat(28)}${currentApiKey.slice(-3)}
-            </div>
-        `
-            : `
-            <div style="color:#ffd700;">
-                ⚠️ Brak klucza API
-            </div>
-            <div style="color:#aaa;font-family:monospace;font-size:0.95em;">
-                Aplikacja wymaga klucza do działania
-            </div>
-        `
-        }
-    `;
+      <div style="font-size:1.08em;font-weight:600;margin-bottom:0.5em;">
+        <span style="color:#e2b93b;vertical-align:middle;">🔑</span> Status klucza API:
+      </div>
+      ${apiStatusHtml}
+  `;
   document.body.appendChild(apiBox);
-
-  // Znikanie boxa gdy modal zostaje zamknięty
-  const _closeModal = window.closeModal;
-  window.closeModal = function () {
-    apiBox.classList.add("hide");
-    setTimeout(() => {
-      apiBox.remove();
-      // przywróć oryginalne closeModal
-      window.closeModal = _closeModal;
-    }, 320);
-    _closeModal();
-  };
-
-  // obsługa przycisków z dodatkowymi akcjami
-  setTimeout(() => {
-    document
-      .getElementById("clear-cache-btn-modal")
-      ?.addEventListener("click", () => window.closeModal());
-    document
-      .getElementById("remove-api-key-btn-modal")
-      ?.addEventListener("click", () => window.closeModal());
-    document
-      .querySelector(".modal-btn-danger")
-      ?.addEventListener("click", () => window.closeModal());
-  }, 100);
 }
 
-function clearHistory() {
-  if (confirm("Czy na pewno wyczyścić całą historię oglądania?")) {
-    setHistoria([]);
-    closeModal();
-    showDebug("Historia została wyczyszczona", "ok");
-  }
-}
+// Wywołuj renderApiKeyFloatingBox() po każdej zmianie klucza API, czyszczeniu lub starcie strony!
 
 // ========== Keyboard Help ==========
 function showKeyboardHelp() {
@@ -1028,6 +1091,11 @@ function modal(contentHtml) {
 function closeModal() {
   let m = document.getElementById("modal-spz");
   if (m) m.remove();
+
+  document.querySelectorAll('.api-key-status-floating').forEach(e => {
+    e.classList.add("hide");
+    setTimeout(() => e.remove(), 350); // 350ms = czas fade out
+  });
 }
 
 // ========== Player ==========
@@ -1091,7 +1159,7 @@ function playFromQueue(idx = 0, tried = 0) {
       events: {
         onReady: function (event) {
           event.target.setVolume(getGlobalVolume());
-          showDebug(`🎵 Ładowanie: <b>${queue[idx].title}</b>`, "ok");
+          // showDebug(`🎵 Ładowanie: <b>${queue[idx].title}</b>`, "ok");
           startProgressTracking();
         },
         onError: function (event) {
@@ -1259,12 +1327,16 @@ function renderAll() {
   if (localStorage.getItem("ytQueuePlaying"))
     playFromQueue(parseInt(localStorage.getItem("ytQueuePlaying")));
 
-  // ⭐ ZMIANA: Sprawdź API key i pokaż odpowiednią wiadomość
+  // BRAK KLUCZA API – pierwsze uruchomienie (1ST RUN)
   if (!checkAPIKeyValid()) {
-    showDebug(
-      `🔑 <span style="color:#ffd700;font-weight:bold;cursor:pointer;text-decoration:underline;" onclick="showAPIKeySetupModal()">NALEŻY WPROWADZIĆ API KEY - KLIKNIJ TUTAJ</span>`,
-      "warn",
-    );
+    if (!document.getElementById("debug-row").innerHTML.includes("BRAK KLUCZA API")) {
+      showDebug(
+        `🔑 BRAK KLUCZA API – kliknij tutaj aby skonfigurować`,
+        "warn"
+      );
+    }
+    updateFormState();
+    return;
   } else {
     showDebug("Ready, Nocna Zmaza Bluesa v.89 🦉", "ok");
   }
@@ -1272,18 +1344,33 @@ function renderAll() {
 
 // ⭐ DODAJ obsługę klikalnego tekstu w showDebug
 function showDebug(msg, type = "ok") {
-  if (statusDebugActive && !(msg.includes("API:") || msg.includes("Ready")))
-    return;
   const dbg = document.getElementById("debug-row");
+  if (
+    dbg.innerHTML.includes("BRAK KLUCZA API") &&
+    !msg.includes("KLUCZA API") &&
+    !msg.includes("API key")
+  ) {
+    return;
+  }
   dbg.innerHTML = msg;
   dbg.className = "footer-row";
   if (type === "ok") dbg.classList.add("debug-ok");
   if (type === "warn") dbg.classList.add("debug-warn");
   if (type === "error") dbg.classList.add("debug-err");
-  dbg.style.cursor = msg.includes("onclick=") ? "pointer" : "default";
+
+  // Klikalność CAŁEGO debug-row gdy brak klucza API
+  if (msg.includes("BRAK KLUCZA API")) {
+    dbg.style.cursor = "pointer";
+    dbg.onclick = showAPIKeySetupModal;
+    dbg.title = "Kliknij tutaj aby skonfigurować klucz API";
+  } else {
+    dbg.style.cursor = "default";
+    dbg.onclick = null;
+    dbg.title = "";
+  }
 }
 
-let statusDebugActive = false; // Status debug aktywny od startu
+// let statusDebugActive = false; // Status debug aktywny od startu
 
 // PODMIEN showStatusDebug CAŁY BLOK:
 function showStatusDebug() {
