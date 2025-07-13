@@ -208,7 +208,8 @@ function startProgressTracking() {
 
 function updateProgressInDebug(current, total, progress) {
   const queue = getQueue();
-  const playingIdx = Number(localStorage.getItem("ytQueuePlaying"));
+  const playingId = localStorage.getItem("ytQueuePlayingId");
+  const playingIdx = queue.findIndex(v => v.id === playingId);
 
   if (queue[playingIdx]) {
     let currentTitle = getShortTitle(queue[playingIdx].title, 60);
@@ -744,7 +745,8 @@ function createQueueItem(v, actualIdx, playingIdx) {
 function renderQueueOptimized() {
   const listUl = document.getElementById("queue-list");
   const queue = getQueue();
-  const playingIdx = Number(localStorage.getItem("ytQueuePlaying"));
+  const playingId = localStorage.getItem("ytQueuePlayingId");
+  const playingIdx = queue.findIndex(v => v.id === playingId);
 
   document.getElementById("queue-count").innerText = queue.length
     ? `(${queue.length})`
@@ -790,7 +792,8 @@ function renderQueueOptimized() {
     nextBtn.innerHTML = "▶️ " + (isStarted ? "Następny" : "Startuj");
     nextBtn.style.display = "block";
     nextBtn.onclick = function () {
-      let idx = parseInt(localStorage.getItem("ytQueuePlaying") || "-1", 10);
+      const playingId = localStorage.getItem("ytQueuePlayingId");
+	  let idx = queue.findIndex(v => v.id === playingId);
       if (!isStarted) {
         playFromQueue(0, 0);
       } else {
@@ -814,7 +817,8 @@ function renderQueue() {
 // ========== Show Full Queue Modal ==========
 function showFullQueueModal() {
   const queue = getQueue();
-  const playingIdx = Number(localStorage.getItem("ytQueuePlaying"));
+  const playingId = localStorage.getItem("ytQueuePlayingId");
+  const playingIdx = queue.findIndex(v => v.id === playingId);
   const watchedIds = getWatchedIds();
 
   let html = "<h3>Pełna kolejka (" + queue.length + " filmów)</h3>";
@@ -868,6 +872,7 @@ let historyVisibleCount = HIST_PAGE_SIZE;
 
 function renderHistoria() {
   let hist = getHistoria();
+
   let html = "";
 
   // Jeśli pusto
@@ -876,27 +881,23 @@ function renderHistoria() {
     html += `<button onclick="showFullHistory()" style="margin-left:0.7em;font-size:0.95em;background:#222;color:#aaf;border-radius:6px;">HISTORIA</button>`;
     html += `<button onclick="showStatusDebug()" style="margin-left:0.5em;font-size:0.95em;background:#222;color:#8f8;border-radius:6px;">STATUS</button>`;
   } else {
-    // Pokazujemy tyle, ile wynosi historyVisibleCount
     hist
-      .slice(-historyVisibleCount)
+      .slice(-4)
       .reverse()
       .forEach((h) => {
-        html += `<span style="margin-right:1.5em;">
-                <b>${h.title.length > 20 ? h.title.slice(0, 17) + "…" : h.title}</b>
-                <small style="color:#aaa">(${h.channel}, ${h.date.split(",")[0]})</small>
-            </span>`;
+        const [datePart, timePart] = h.date.split(",");
+        const timeNoSeconds = timePart ? timePart.trim().slice(0,5) : "";
+        const dateTime = `${datePart}${timeNoSeconds ? ', ' + timeNoSeconds : ''}`;
+        html += `<span>
+          <b>${h.title.length > 20 ? h.title.slice(0, 17) + "…" : h.title}</b>
+          <small style="color:#aaa; margin-top:0.18em;">${dateTime}</small>
+        </span>`;
       });
-    // Przyciski zawsze na końcu
+
     html += `<button onclick="showFullHistory()" style="margin-left:0.7em;font-size:0.95em;background:#222;color:#aaf;border-radius:6px;">HISTORIA</button>`;
     html += `<button onclick="showStatusDebug()" style="margin-left:0.5em;font-size:0.95em;background:#222;color:#8f8;border-radius:6px;">STATUS</button>`;
-
-    // Jeżeli jest więcej historii do pokazania, pokaż przycisk "Pokaż więcej"
-    if (hist.length > historyVisibleCount) {
-      html += `<button onclick="showMoreHistory()" style="margin-left:0.7em;font-size:0.95em;background:#333;color:#ffa;border-radius:6px;">Pokaż więcej</button>`;
-    }
   }
 
-  // Wyświetl wynik
   document.getElementById("history-row").innerHTML = html;
 }
 
@@ -1095,10 +1096,9 @@ function modal(contentHtml) {
 function closeModal() {
   let m = document.getElementById("modal-spz");
   if (m) m.remove();
-
   document.querySelectorAll('.api-key-status-floating').forEach(e => {
     e.classList.add("hide");
-    setTimeout(() => e.remove(), 350); // 350ms = czas fade out
+    setTimeout(() => e.remove(), 350);
   });
 }
 
@@ -1203,7 +1203,7 @@ function playFromQueue(idx = 0, tried = 0) {
     });
   }, 400);
 
-  localStorage.setItem("ytQueuePlaying", idx);
+  localStorage.setItem("ytQueuePlayingId", queue[idx].id);
   sessionPlayed++;
   saveHistory(queue[idx]);
   renderStats();
@@ -1333,8 +1333,11 @@ function renderAll() {
     document.getElementById("program-header").innerText =
       "🦉 (NZB) Nocna Zmaza Bluesa v.89";
   updateModeButtons();
-  if (localStorage.getItem("ytQueuePlaying"))
-    playFromQueue(parseInt(localStorage.getItem("ytQueuePlaying")));
+  const playingId = localStorage.getItem("ytQueuePlayingId");
+  const queue = getQueue();
+  const idx = queue.findIndex(v => v.id === playingId);
+  if (playingId && idx !== -1)
+    playFromQueue(idx);
 
   // BRAK KLUCZA API – pierwsze uruchomienie (1ST RUN)
   if (!checkAPIKeyValid()) {
