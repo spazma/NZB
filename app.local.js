@@ -205,11 +205,15 @@ function updateProgressInDebug(current, total, progress) {
   const playingIdx = Number(localStorage.getItem("ytQueuePlaying"));
 
   if (queue[playingIdx]) {
-    const currentTitle = queue[playingIdx].title;
+    let currentTitle = queue[playingIdx].title;
+    // Skróć tytuł do max 30 znaków (z wielokropkiem, jeśli dłuższy)
+    if (currentTitle.length > 60) {
+      currentTitle = currentTitle.slice(0, 57) + "…";
+    }
     const progressText = `${formatTime(current)}/${formatTime(total)} - ${Math.round(progress)}%`;
 
-    // Aktualizuj debug z tytułem + progress
-    showDebug(`▶️ <b>${currentTitle}</b> - [${progressText}]`, "ok");
+    // Wszystko w jednej linii, brak <b>, brak nowych linii
+    showDebug(`▶️ ${currentTitle} ${progressText}`, "ok");
   }
 }
 
